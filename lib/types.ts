@@ -143,6 +143,7 @@ export interface AvailabilitySettings {
   leadTimeDays: number;
   maxBookingsPerSlot: number;
   bufferTimeMinutes: number;
+  maxAdvanceBookingDays: number; // Maximum days in advance for bookings (0 = unlimited)
 }
 
 // Overbooking settings

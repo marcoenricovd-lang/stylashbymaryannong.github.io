@@ -91,6 +91,8 @@ export default function AdminDashboard() {
   const [selectedSlotDate, setSelectedSlotDate] = useState<string>("");
   const [selectedTimeSlots, setSelectedTimeSlots] = useState<string[]>([]);
   const [slotNote, setSlotNote] = useState("");
+  const [blockDateInput, setBlockDateInput] = useState<string>("");
+  const [blockDateNote, setBlockDateNote] = useState<string>("");
 
   // Security state
   const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
@@ -197,10 +199,10 @@ export default function AdminDashboard() {
     }
   };
 
-  // Get bookings for a specific date
+  // Get bookings for a specific date (excluding cancelled)
   const getBookingsForDate = (date: Date) => {
     const dateStr = format(date, "yyyy-MM-dd");
-    return bookings.filter((b) => b.date === dateStr);
+    return bookings.filter((b) => b.date === dateStr && b.status !== "cancelled");
   };
 
   // Quick actions
@@ -554,7 +556,7 @@ export default function AdminDashboard() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
-                          {booking.status === "awaiting_verification" && (
+                          {(booking.status === "pending_payment" || booking.status === "awaiting_verification") && (
                             <button
                               onClick={() => handleMarkPaid(booking.id)}
                               className="text-xs bg-green-100 text-green-700 px-3 py-1.5 rounded-lg hover:bg-green-200 font-medium"
@@ -842,7 +844,63 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            {/* Lead Time */}
+            {/* Block Specific Date */}
+            <div className="bg-white rounded-xl shadow-sm p-6">
+              <h3 className="text-lg font-semibold mb-4">Block Specific Date</h3>
+              <p className="text-sm text-gray-600 mb-4">
+                Block a specific date to prevent any bookings on that day.
+              </p>
+              
+              <div className="bg-gray-50 rounded-lg p-4 mb-4">
+                <div className="grid md:grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Select Date to Block</label>
+                    <input
+                      type="date"
+                      value={blockDateInput}
+                      onChange={(e) => setBlockDateInput(e.target.value)}
+                      className="w-full border rounded-lg px-3 py-2"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Note (optional)</label>
+                    <input
+                      type="text"
+                      value={blockDateNote}
+                      onChange={(e) => setBlockDateNote(e.target.value)}
+                      placeholder="e.g., Holiday, Staff day off"
+                      className="w-full border rounded-lg px-3 py-2"
+                    />
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    if (blockDateInput && !availability.blockedDates.includes(blockDateInput)) {
+                      const newBlocked = [...availability.blockedDates, blockDateInput];
+                      updateAvailabilitySettings({ ...availability, blockedDates: newBlocked });
+                      addAuditLogEntry({
+                        timestamp: new Date().toISOString(),
+                        user: "admin",
+                        actionType: "AVAILABILITY_CHANGED",
+                        target: blockDateInput,
+                        after: `Blocked: ${blockDateNote || "No reason"}`,
+                        ipAddress: activeSessions[0]?.ip || "unknown",
+                        sessionToken: activeSessions[0]?.token || "unknown",
+                      });
+                      loadData();
+                      setBlockDateInput("");
+                      setBlockDateNote("");
+                    }
+                  }}
+                  disabled={!blockDateInput || availability.blockedDates.includes(blockDateInput)}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Block Date
+                </button>
+              </div>
+            </div>
+
+            {/* Booking Settings */}
             <div className="bg-white rounded-xl shadow-sm p-6">
               <h3 className="text-lg font-semibold mb-4">Booking Settings</h3>
               <div className="space-y-4">
@@ -856,6 +914,21 @@ export default function AdminDashboard() {
                     value={availability.leadTimeDays}
                     onChange={(e) => {
                       updateAvailabilitySettings({ ...availability, leadTimeDays: parseInt(e.target.value) || 0 });
+                      loadData();
+                    }}
+                    className="w-32 border rounded-lg px-3 py-2"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Max Advance Booking (days)</label>
+                  <p className="text-xs text-gray-500 mb-2">Maximum days in advance for bookings (0 = unlimited)</p>
+                  <input
+                    type="number"
+                    min={0}
+                    max={365}
+                    value={availability.maxAdvanceBookingDays}
+                    onChange={(e) => {
+                      updateAvailabilitySettings({ ...availability, maxAdvanceBookingDays: parseInt(e.target.value) || 0 });
                       loadData();
                     }}
                     className="w-32 border rounded-lg px-3 py-2"

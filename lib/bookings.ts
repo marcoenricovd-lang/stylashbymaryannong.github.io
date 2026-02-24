@@ -29,6 +29,7 @@ export const DEFAULT_AVAILABILITY: AvailabilitySettings = {
   leadTimeDays: 1, // No same-day bookings
   maxBookingsPerSlot: 1,
   bufferTimeMinutes: 0,
+  maxAdvanceBookingDays: 0, // 0 = unlimited (default)
 };
 
 // Default overbooking settings
@@ -129,6 +130,11 @@ export function isSlotAvailable(date: string, timeSlot: string): boolean {
   const daysDiff = Math.ceil((bookingDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
   
   if (daysDiff < availability.leadTimeDays) {
+    return false;
+  }
+  
+  // Check maximum advance booking limit
+  if (availability.maxAdvanceBookingDays > 0 && daysDiff > availability.maxAdvanceBookingDays) {
     return false;
   }
   

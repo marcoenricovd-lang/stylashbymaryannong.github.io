@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { Phone, MapPin, Clock, Mail, Facebook, MessageCircle, Star, Award, Users, ChevronDown, Heart, Sparkles, Menu, X, Calendar, CheckCircle, Instagram } from "lucide-react";
@@ -118,7 +117,7 @@ export default function Home() {
               <div className="relative w-full aspect-[3/4] max-w-md mx-auto">
                 <div className="absolute inset-0 bg-gradient-to-br from-pink-400 to-purple-400 rounded-3xl transform rotate-3 opacity-20" />
                 <div className="relative h-full rounded-3xl overflow-hidden shadow-2xl">
-                  <Image src="/images/mary-ann-ong-master-trainer.jpg" alt="Mary Ann Ong - Master Trainer" fill className="object-cover" priority />
+                  <img src="/images/mary-ann-ong-master-trainer.jpg" alt="Mary Ann Ong - Master Trainer" className="object-cover w-full h-full" />
                 </div>
                 <div className="absolute -bottom-6 -left-6 bg-white rounded-2xl p-4 shadow-xl">
                   <div className="flex items-center gap-3">
@@ -144,7 +143,7 @@ export default function Home() {
               <div className="relative w-full max-w-md mx-auto">
                 <div className="absolute -inset-4 border-2 border-pink-200 rounded-3xl transform rotate-3" />
                 <div className="relative rounded-3xl overflow-hidden shadow-2xl aspect-[3/4]">
-                  <Image src="/images/mary-ann-ong-master-trainer.jpg" alt="Mary Ann Ong - Master Trainer" fill className="object-cover" />
+                  <img src="/images/mary-ann-ong-master-trainer.jpg" alt="Mary Ann Ong - Master Trainer" className="object-cover w-full h-full" />
                 </div>
               </div>
             </div>
@@ -246,7 +245,7 @@ export default function Home() {
           <div className="grid md:grid-cols-3 gap-6">
             {galleryImages.map((image, index) => (
               <div key={index} className="group relative aspect-square rounded-2xl overflow-hidden shadow-lg">
-                <Image src={image.src} alt={image.alt} fill className="object-cover group-hover:scale-110 transition-transform duration-500" />
+                <img src={image.src} alt={image.alt} className="object-cover w-full h-full group-hover:scale-110 transition-transform duration-500" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
                   <div className="absolute bottom-4 left-4 text-white">
                     <p className="font-medium">{image.alt}</p>

@@ -3,11 +3,10 @@
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
 import { ChevronLeft, Calendar, Clock, User, Phone, Mail, CheckCircle, CreditCard, Loader2, QrCode } from "lucide-react";
 import { format, isSameDay, startOfDay, isBefore, isToday } from "date-fns";
 import { SERVICES, getServiceById, getBookingFee, formatPrice } from "@/lib/services";
-import { createBooking, getAvailableTimeSlots, isSlotAvailable } from "@/lib/bookings";
+import { createBooking, getAvailableTimeSlots, isSlotAvailable, getAvailabilitySettings } from "@/lib/bookings";
 
 function BookingForm() {
   const searchParams = useSearchParams();
@@ -22,6 +21,8 @@ function BookingForm() {
   const [availableSlots, setAvailableSlots] = useState<string[]>([]);
 
   const selectedService = getServiceById(selectedServiceId);
+  const availability = getAvailabilitySettings();
+  const maxAdvanceDays = availability.maxAdvanceBookingDays;
 
   // Update available slots when date changes
   useEffect(() => {
@@ -34,6 +35,22 @@ function BookingForm() {
       }
     }
   }, [selectedDate]);
+
+  // Check if a date is selectable (within allowed range)
+  const isDateSelectable = (date: Date): boolean => {
+    // Check if date is in the past
+    if (isBefore(date, startOfDay(new Date()))) return false;
+    
+    // Check max advance booking limit
+    if (maxAdvanceDays > 0) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const daysDiff = Math.ceil((date.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      if (daysDiff > maxAdvanceDays) return false;
+    }
+    
+    return true;
+  };
 
   const generateCalendarDays = () => {
     const year = currentMonth.getFullYear(), month = currentMonth.getMonth();
@@ -129,8 +146,20 @@ function BookingForm() {
                   {generateCalendarDays().map((date, i) => (
                     <div key={i}>
                       {date ? (
-                        <button onClick={() => setSelectedDate(date)} disabled={isBefore(date, startOfDay(new Date()))} 
-                          className={`w-full aspect-square rounded-lg text-sm ${selectedDate && isSameDay(date, selectedDate) ? "bg-pink-600 text-white" : isBefore(date, startOfDay(new Date())) ? "text-gray-300" : "hover:bg-pink-50"}`}>{date.getDate()}</button>
+                        <button 
+                          onClick={() => isDateSelectable(date) && setSelectedDate(date)} 
+                          disabled={!isDateSelectable(date)} 
+                          className={`w-full aspect-square rounded-lg text-sm ${
+                            selectedDate && isSameDay(date, selectedDate) 
+                              ? "bg-pink-600 text-white" 
+                              : !isDateSelectable(date)
+                                ? "text-gray-300 cursor-not-allowed" 
+                                : "hover:bg-pink-50"
+                          }`}
+                          title={!isDateSelectable(date) && !isBefore(date, startOfDay(new Date())) ? `Bookings only available up to ${maxAdvanceDays} days in advance` : undefined}
+                        >
+                          {date.getDate()}
+                        </button>
                       ) : <div />}
                     </div>
                   ))}
@@ -138,7 +167,16 @@ function BookingForm() {
               </div>
               <div className="bg-white rounded-2xl shadow-lg p-6">
                 <h3 className="font-bold mb-4 flex items-center gap-2"><Clock className="w-5 h-5 text-pink-600" />Available Times</h3>
-                {!selectedDate ? <p className="text-gray-500 text-center py-12">Select a date first</p> : availableSlots.length === 0 ? (
+          {!selectedDate ? (
+                  <p className="text-gray-500 text-center py-12">Select a date first</p>
+                ) : !isDateSelectable(selectedDate) ? (
+                  <div className="text-center py-12">
+                    <p className="text-gray-500 mb-2">This date is not available for booking</p>
+                    {maxAdvanceDays > 0 && (
+                      <p className="text-sm text-gray-400">Bookings only available up to {maxAdvanceDays} days in advance</p>
+                    )}
+                  </div>
+                ) : availableSlots.length === 0 ? (
                   <div className="text-center py-12">
                     <p className="text-gray-500 mb-2">No available time slots for this date</p>
                     <p className="text-sm text-gray-400">Please select another date</p>
@@ -220,11 +258,10 @@ function BookingForm() {
                   Scan to Pay with GCash
                 </h3>
                 <div className="relative w-64 h-64 mx-auto bg-gray-100 rounded-xl overflow-hidden">
-                  <Image
+                  <img
                     src="/images/payment-qr.png"
                     alt="GCash Payment QR Code"
-                    fill
-                    className="object-contain"
+                    className="object-contain w-full h-full"
                   />
                 </div>
                 <p className="text-center text-sm text-gray-500 mt-4">
